@@ -8,6 +8,7 @@ import (
 	"github.com/consumer_rmq_fsevent/redis"
 	"log"
 	"net/url"
+	"strings"
 )
 
 type ConfEventInterface interface {
@@ -74,6 +75,12 @@ func (cf *ConfEventHandler) ProcessConfEvent(eventData []byte) error {
 			}
 		}
 
+		if confEvent.Action == "conference-destroy" {
+			if err = cf.cacheHandler.Del(confKey); err != nil{
+				log.Println("conference key delete failed on conference end ", confKey)
+			}
+		}
+
 		if statusCallbackUrl != "" {
 			statusCallbackMap := cf.FormatConferenceStatusCallback(confCacheModel, confEvent)
 
@@ -93,13 +100,16 @@ func (cf *ConfEventHandler) FormatConferenceStatusCallback(confCacheData model.C
 	var confEvent = make(map[string]interface{})
 
 	confEvent["ConferenceSid"] = confCacheData.DialConfSid
-	confEvent["FriendlyName"] = confEventData.ConferenceProfileName
+	confEvent["FriendlyName"] = getConfFriendlyName(confEventData.ConferenceName)
 	confEvent["AccountSid"] = confCacheData.DialConfAccountSid
 	confEvent["StatusCallbackEvent"] = getConfEventStatus(confEventData.Action)
 	confEvent["CallSid"] = confEventData.ChannelCallUUID
 	return confEvent
 }
 
+func getConfFriendlyName(absoluteConfName string) string {
+	return strings.Split(absoluteConfName, "-")[0]
+}
 func getConfEventStatus(confEventName string) string {
 	switch confEventName {
 	case "add-member":

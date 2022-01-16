@@ -11,6 +11,7 @@ var ctx = context.Background()
 type CacheInterface interface {
 	Get(key string) ([]byte, error)
 	Set(key string, state []byte, expire ...int) error
+	Del(key string) error
 }
 
 type CacheHandler struct {
@@ -30,19 +31,23 @@ func NewCacheHandler() (CacheInterface, error) {
 	}, nil
 }
 
-func (cs CacheHandler) Get(callUUID string) ([]byte, error) {
-	val, err := cs.client.Get(ctx, callUUID).Bytes()
+func (cs CacheHandler) Get(key string) ([]byte, error) {
+	val, err := cs.client.Get(ctx, key).Bytes()
 	if err != nil {
 		return []byte("UNKNOWN"), err
 	}
 	return val, nil
 }
 
-func (cs CacheHandler) Set(callUuid string, state []byte, expired ...int) error {
+func (cs CacheHandler) Set(key string, state []byte, expired ...int) error {
 	expire := 0 * time.Second
 	if len(expired) > 0 {
 		expire = time.Duration(expired[0])
 	}
-	err := cs.client.Set(ctx, callUuid, state, expire*time.Second).Err()
+	err := cs.client.Set(ctx, key, state, expire*time.Second).Err()
 	return err
+}
+
+func (cs CacheHandler) Del(key string) error {
+	return cs.client.Del(ctx, key).Err()
 }
