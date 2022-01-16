@@ -45,4 +45,3 @@ func main() {
 		log.Fatalf("error during shutdown: %s", err)
 	}
 }
-
