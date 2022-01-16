@@ -5,20 +5,20 @@
 package main
 
 import (
-"flag"
-"github.com/consumer_rmq_fsevent/consumer"
-"log"
-"time"
+	"flag"
+	"github.com/consumer_rmq_fsevent/consumer"
+	"github.com/consumer_rmq_fsevent/event"
+	"github.com/consumer_rmq_fsevent/httprest"
+	"github.com/consumer_rmq_fsevent/redis"
+	"log"
+	"time"
 )
 
 var (
-	uri          = flag.String("uri", "amqp://user4tiniyo:4pass4tiniyo@localhost:5672/", "AMQP URI")
-	exchange     = flag.String("exchange", "test-exchange", "Durable, non-auto-deleted AMQP exchange name")
-	exchangeType = flag.String("exchange-type", "direct", "Exchange type - direct|fanout|topic|x-custom")
-	queue        = flag.String("queue", "call_queue_stats", "Ephemeral AMQP queue name")
-	bindingKey   = flag.String("key", "test-key", "AMQP binding key")
-	consumerTag  = flag.String("consumer-tag", "simple-consumer", "AMQP consumer tag (should not be blank)")
-	lifetime     = flag.Duration("lifetime", 0*time.Second, "lifetime of process before shutdown (0s=infinite)")
+	uri         = flag.String("uri", "amqp://user4tiniyo:4pass4tiniyo@3.0.39.201:5672/", "AMQP URI")
+	queue       = flag.String("queue", "call_queue_stats", "Ephemeral AMQP queue name")
+	consumerTag = flag.String("consumer-tag", "simple-consumer", "AMQP consumer tag (should not be blank)")
+	lifetime    = flag.Duration("lifetime", 0*time.Second, "lifetime of process before shutdown (0s=infinite)")
 )
 
 func init() {
@@ -26,22 +26,23 @@ func init() {
 }
 
 func main() {
-	c, err := consumer.NewConsumer(*uri, *exchange, *exchangeType, *queue, *bindingKey, *consumerTag)
-	if err != nil {
+	httpHandler := httprest.NewHttpRestHandler()
+
+	cacheHandle, _ := redis.NewCacheHandler()
+
+	confEventHandler := event.NewConfEventHandler(cacheHandle,httpHandler)
+
+	rmqReq := consumer.RmqConsumerRequest{
+		AmqpURI:      *uri,
+		QueueName:    *queue,
+		Ctag:         *consumerTag,
+		ConfEventHandler:confEventHandler,
+	}
+
+	if err := consumer.NewConsumer(rmqReq);err != nil {
 		log.Fatalf("%s", err)
 	}
 
-	if *lifetime > 0 {
-		log.Printf("running for %s", *lifetime)
-		time.Sleep(*lifetime)
-	} else {
-		log.Printf("running forever")
-		select {}
-	}
+	select {}
 
-	log.Printf("shutting down")
-
-	if err := c.Shutdown(); err != nil {
-		log.Fatalf("error during shutdown: %s", err)
-	}
 }

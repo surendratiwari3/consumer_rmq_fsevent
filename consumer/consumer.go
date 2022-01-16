@@ -1,9 +1,8 @@
 package consumer
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/consumer_rmq_fsevent/model"
+	"github.com/consumer_rmq_fsevent/event"
 	"github.com/streadway/amqp"
 	"log"
 )
@@ -12,27 +11,36 @@ type Consumer interface {
 	Shutdown() error
 }
 
+type RmqConsumerRequest struct {
+	AmqpURI string
+	QueueName string
+	Ctag string
+	ConfEventHandler event.ConfEventInterface
+}
+
 type RabbitMqConsumer struct {
 	conn    *amqp.Connection
+	rmqReq RmqConsumerRequest
 	channel *amqp.Channel
 	tag     string
 	done    chan error
 }
 
-func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, cTag string) (Consumer, error) {
+func NewConsumer(rmqRequest RmqConsumerRequest) (error) {
 	c := &RabbitMqConsumer{
 		conn:    nil,
 		channel: nil,
-		tag:     cTag,
+		rmqReq:rmqRequest,
+		tag:     rmqRequest.Ctag,
 		done:    make(chan error),
 	}
 
 	var err error
 
-	log.Printf("dialing %q", amqpURI)
-	c.conn, err = amqp.Dial(amqpURI)
+	log.Printf("dialing %q", rmqRequest.AmqpURI)
+	c.conn, err = amqp.Dial(rmqRequest.AmqpURI)
 	if err != nil {
-		return nil, fmt.Errorf("Dial: %s", err)
+		return fmt.Errorf("Dial: %s", err)
 	}
 
 	go func() {
@@ -42,12 +50,12 @@ func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, cTag string) (
 	log.Printf("got Connection, getting Channel")
 	c.channel, err = c.conn.Channel()
 	if err != nil {
-		return nil, fmt.Errorf("Channel: %s", err)
+		return fmt.Errorf("Channel: %s", err)
 	}
 
 	log.Printf("Queue bound to Exchange, starting Consume (consumer tag %q)", c.tag)
 	deliveries, err := c.channel.Consume(
-		queueName, // name
+		rmqRequest.QueueName, // name
 		c.tag,     // consumerTag,
 		false,     // noAck
 		false,     // exclusive
@@ -56,12 +64,12 @@ func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, cTag string) (
 		nil,       // arguments
 	)
 	if err != nil {
-		return nil, fmt.Errorf("Queue Consume: %s", err)
+		return fmt.Errorf("Queue Consume: %s", err)
 	}
 
-	go handle(deliveries, c.done)
+	go c.handle(deliveries, c.done)
 
-	return c, nil
+	return nil
 }
 
 func (c *RabbitMqConsumer) Shutdown() error {
@@ -80,22 +88,11 @@ func (c *RabbitMqConsumer) Shutdown() error {
 	return <-c.done
 }
 
-func handle(deliveries <-chan amqp.Delivery, done chan error) {
+func (ch *RabbitMqConsumer) handle(deliveries <-chan amqp.Delivery, done chan error) {
 	for d := range deliveries {
-		var confEvent model.ConferenceEvent
-		if err := json.Unmarshal(d.Body, &confEvent); err == nil {
-			log.Println("event is ", confEvent.EventName, " sub class is ",
-				confEvent.EventSubclass, " action is ", confEvent.Action,
-				" name is ", confEvent.ConferenceName, " time is ", confEvent.EventDateTimestamp)
+		if err := ch.rmqReq.ConfEventHandler.ProcessConfEvent(d.Body); err == nil{
 			d.Ack(false)
 		}
-		/*log.Printf(
-			"got %dB delivery: [%v] %q",
-			len(d.Body),
-			d.DeliveryTag,
-			d.Body,
-		)*/
-
 	}
 	log.Printf("handle: deliveries channel closed")
 	done <- nil
