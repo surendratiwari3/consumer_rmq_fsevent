@@ -76,18 +76,19 @@ func (cf *ConfEventHandler) ProcessConfEvent(eventData []byte) error {
 		}
 
 		if confEvent.Action == "conference-destroy" {
-			if err = cf.cacheHandler.Del(confKey); err != nil{
+			if err = cf.cacheHandler.Del(confKey); err != nil {
 				log.Println("conference key delete failed on conference end ", confKey)
 			}
 		}
 
 		if statusCallbackUrl != "" {
 			statusCallbackMap := cf.FormatConferenceStatusCallback(confCacheModel, confEvent)
-
-			if statusCallbackMethod == "GET" {
-				_, _, _ = cf.httpHandler.Get(statusCallbackMap, statusCallbackUrl)
-			} else {
-				_, _, _ = cf.httpHandler.Post(statusCallbackMap, statusCallbackUrl)
+			if statusCallbackMap["StatusCallbackEvent"] != "" {
+				if statusCallbackMethod == "GET" {
+					_, _, _ = cf.httpHandler.Get(statusCallbackMap, statusCallbackUrl)
+				} else {
+					_, _, _ = cf.httpHandler.Post(statusCallbackMap, statusCallbackUrl)
+				}
 			}
 		}
 
@@ -98,7 +99,6 @@ func (cf *ConfEventHandler) ProcessConfEvent(eventData []byte) error {
 func (cf *ConfEventHandler) FormatConferenceStatusCallback(confCacheData model.ConferenceDetailsFromCache,
 	confEventData model.ConferenceEvent) map[string]interface{} {
 	var confEvent = make(map[string]interface{})
-
 	confEvent["ConferenceSid"] = confCacheData.DialConfSid
 	confEvent["FriendlyName"] = getConfFriendlyName(confEventData.ConferenceName)
 	confEvent["AccountSid"] = confCacheData.DialConfAccountSid
@@ -108,7 +108,7 @@ func (cf *ConfEventHandler) FormatConferenceStatusCallback(confCacheData model.C
 }
 
 func getConfFriendlyName(absoluteConfName string) string {
-	return strings.Split(absoluteConfName, "-")[0]
+	return strings.SplitN(absoluteConfName, "-", 2)[1]
 }
 func getConfEventStatus(confEventName string) string {
 	switch confEventName {
@@ -122,6 +122,5 @@ func getConfEventStatus(confEventName string) string {
 		return "conference-end"
 	default:
 		return ""
-
 	}
 }
