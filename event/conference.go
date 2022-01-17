@@ -89,6 +89,7 @@ func (cf *ConfEventHandler) ProcessConfEvent(eventData []byte) error {
 
 		if statusCallbackUrl != "" {
 			log.Println("statuscallback url is ", statusCallbackUrl)
+			log.Println("event_data - ", confEvent)
 			statusCallbackMap := cf.FormatConferenceStatusCallback(confCacheModel, confEvent)
 			log.Println("statuscallback map is before event check ", statusCallbackMap)
 			if statusCallbackMap["StatusCallbackEvent"] != "" {
@@ -98,6 +99,11 @@ func (cf *ConfEventHandler) ProcessConfEvent(eventData []byte) error {
 				} else {
 					_, _, _ = cf.httpHandler.Post(statusCallbackMap, statusCallbackUrl)
 				}
+			}
+
+			//check if its last member then send conference-end
+			if statusCallbackMap["add-member"] == "" {
+
 			}
 		}
 
