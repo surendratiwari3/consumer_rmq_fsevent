@@ -65,7 +65,7 @@ func (cf *ConfEventHandler) ProcessConfEvent(eventData []byte) error {
 		log.Println("conference get key is ", confKey)
 
 		//getting details from conference cache
-		if confCacheData, err = cf.cacheHandler.Get(confKey); err == nil {
+		if confCacheData, err = cf.cacheHandler.Get(confKey); err != nil {
 			log.Println("conference data not found in cache", confKey, err)
 			return err
 		}
