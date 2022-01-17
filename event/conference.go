@@ -66,17 +66,20 @@ func (cf *ConfEventHandler) ProcessConfEvent(eventData []byte) error {
 
 		//getting details from conference cache
 		if confCacheData, err = cf.cacheHandler.Get(confKey); err == nil {
-			if err := json.Unmarshal(confCacheData, &confCacheModel); err == nil {
-				statusCallbackUrl = confCacheModel.DialConferenceStatusCallback
-				statusCallbackMethod = confCacheModel.DialConferenceStatusCallbackMethod
-				log.Println("conference status callback url is ", confCacheModel)
-			} else {
-				log.Println("conference data found in cache, unmarshal failed ", confKey)
-			}
+			return err
 		}
 
+		if err := json.Unmarshal(confCacheData, &confCacheModel); err != nil {
+			log.Println("conference data found in cache, unmarshal failed ", confKey)
+			return err
+		}
+
+		statusCallbackUrl = confCacheModel.DialConferenceStatusCallback
+		statusCallbackMethod = confCacheModel.DialConferenceStatusCallbackMethod
+		log.Println("conference status callback url is ", confCacheModel)
+
 		if confEvent.Action == "conference-destroy" {
-			if err = cf.cacheHandler.Del(confKey); err != nil {
+			if err = cf.cacheHandler.Expire(confKey); err != nil {
 				log.Println("conference key delete failed on conference end ", confKey)
 			}
 		}
