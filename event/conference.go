@@ -66,16 +66,19 @@ func (cf *ConfEventHandler) ProcessConfEvent(eventData []byte) error {
 
 		//getting details from conference cache
 		if confCacheData, err = cf.cacheHandler.Get(confKey); err == nil {
+			log.Println("conference data not found in cache", confKey, err)
 			return err
 		}
 
 		if err := json.Unmarshal(confCacheData, &confCacheModel); err != nil {
-			log.Println("conference data found in cache, unmarshal failed ", confKey)
+			log.Println("conference data found in cache, unmarshal failed ", confKey,err)
 			return err
 		}
 
 		statusCallbackUrl = confCacheModel.DialConferenceStatusCallback
+
 		statusCallbackMethod = confCacheModel.DialConferenceStatusCallbackMethod
+
 		log.Println("conference status callback url is ", confCacheModel)
 
 		if confEvent.Action == "conference-destroy" {
@@ -85,8 +88,11 @@ func (cf *ConfEventHandler) ProcessConfEvent(eventData []byte) error {
 		}
 
 		if statusCallbackUrl != "" {
+			log.Println("statuscallback url is ", statusCallbackUrl)
 			statusCallbackMap := cf.FormatConferenceStatusCallback(confCacheModel, confEvent)
+			log.Println("statuscallback map is before event check ", statusCallbackMap)
 			if statusCallbackMap["StatusCallbackEvent"] != "" {
+				log.Println("statuscallback map is ", statusCallbackMap)
 				if statusCallbackMethod == "GET" {
 					_, _, _ = cf.httpHandler.Get(statusCallbackMap, statusCallbackUrl)
 				} else {
@@ -113,6 +119,7 @@ func (cf *ConfEventHandler) FormatConferenceStatusCallback(confCacheData model.C
 func getConfFriendlyName(absoluteConfName string) string {
 	return strings.SplitN(absoluteConfName, "-", 2)[1]
 }
+
 func getConfEventStatus(confEventName string) string {
 	switch confEventName {
 	case "add-member":
