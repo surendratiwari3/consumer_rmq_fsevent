@@ -1,7 +1,3 @@
-// This declares a durable Exchange, an ephemeral (auto-delete) Queue,
-// binds the Queue to the Exchange with a binding key, and consumes every
-// message published to that Exchange with that routing key.
-//
 package main
 
 import (
@@ -11,6 +7,7 @@ import (
 	"github.com/consumer_rmq_fsevent/rabbitmq"
 	"github.com/consumer_rmq_fsevent/redis"
 	"log"
+	"os"
 )
 
 var (
@@ -30,20 +27,22 @@ func main() {
 
 	confEventHandler := event.NewConfEventHandler(cacheHandle, httpHandler)
 
-	/*rmqReq := consumer.RmqConsumerRequest{
-		AmqpURI:      *uri,
-		QueueName:    *queue,
-		Ctag:         *consumerTag,
-		ConfEventHandler:confEventHandler,
-	}*/
+	var rabbitMqHandle rabbitmq.RmqInterface
+	var err error
 
-	if rmqHandle, err := rabbitmq.NewRmqAdapter(*uri, *queue); err != nil {
+	if rabbitMqHandle, err = rabbitmq.NewRmqAdapter(*uri, *queue); err != nil {
 		log.Fatalf("%s", err)
-	} else {
-		if err := rmqHandle.Consumer(*consumerTag, confEventHandler.ProcessConfEvent); err != nil {
-			log.Fatalf("%s", err)
-		} else {
-			select {}
-		}
+		os.Exit(0)
+	}
+
+	errConsumerChan := make(chan error)
+	if err := rabbitMqHandle.Consumer(*consumerTag, confEventHandler.ProcessConfEvent, errConsumerChan); err != nil {
+		log.Fatalf("%s", err)
+		os.Exit(0)
+	}
+
+	err = <-errConsumerChan
+	if err != nil {
+		os.Exit(0)
 	}
 }

@@ -12,16 +12,15 @@ type consumerFunc func([]byte) error
 
 type RmqInterface interface {
 	PublishCallStats(data []byte) error
-	Consumer(consumerTag string, consumerHandler consumerFunc) error
+	Consumer(consumerTag string, consumerHandler consumerFunc, consumerErr chan error) error
 }
 
 type RmqAdapter struct {
-	url        string
-	client     *amqp.Connection
-	channel    *amqp.Channel
-	routingKey string
-	done       chan error
-	mLock      sync.Mutex
+	url         string
+	client      *amqp.Connection
+	channel     *amqp.Channel
+	routingKey  string
+	mLock       sync.Mutex
 }
 
 // Connect opens a connection to RabbitMQ, declares an exchange, opens a channel,
@@ -47,7 +46,6 @@ func NewRmqAdapter(rmqURL, queue string) (RmqInterface, error) {
 		client:     conn,
 		channel:    channel,
 		routingKey: queue,
-		done:       make(chan error),
 		mLock:      mutexLock,
 	}
 
@@ -86,7 +84,7 @@ func (cq *RmqAdapter) reconnect() {
 	cq.mLock.Unlock()
 }
 
-func (cq *RmqAdapter) Consumer(consumerTag string, consumerHandler consumerFunc) error {
+func (cq *RmqAdapter) Consumer(consumerTag string, consumerHandler consumerFunc, consumerErr chan error) error {
 	log.Printf("Queue bound to Exchange, starting Consume (consumer tag %q)", consumerTag)
 	deliveries, err := cq.channel.Consume(
 		cq.routingKey, // name
@@ -98,9 +96,10 @@ func (cq *RmqAdapter) Consumer(consumerTag string, consumerHandler consumerFunc)
 		nil,           // arguments
 	)
 	if err != nil {
-		return fmt.Errorf("Queue Consume: %s", err)
+		return fmt.Errorf("queue consume: %s", err)
 	}
-	go cq.handle(deliveries, cq.done, consumerHandler)
+
+	go cq.handle(deliveries, consumerErr, consumerHandler)
 
 	return err
 }
@@ -121,17 +120,18 @@ func (cq *RmqAdapter) PublishCallStats(data []byte) error {
 			Priority:        0,
 		},
 	); err != nil {
-		return fmt.Errorf("Exchange Publish: %s", err)
+		return fmt.Errorf("exchange publish: %s", err)
 	}
 	return err
 }
 
-func (cq *RmqAdapter) handle(deliveries <-chan amqp.Delivery, done chan error, consumerHandler consumerFunc) {
+func (cq *RmqAdapter) handle(deliveries <-chan amqp.Delivery, consumerErr chan error, consumerHandler consumerFunc) {
 	for d := range deliveries {
 		if err := consumerHandler(d.Body); err == nil {
-			d.Ack(false)
+			_ = d.Ack(false)
 		}
 	}
 	log.Printf("handle: deliveries channel closed")
-	done <- nil
+	err := fmt.Errorf("handle: deliveries channel closed")
+	consumerErr <- err
 }
