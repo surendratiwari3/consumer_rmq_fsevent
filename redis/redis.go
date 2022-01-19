@@ -13,6 +13,7 @@ type CacheInterface interface {
 	Set(key string, state []byte, expire ...int) error
 	Del(key string) error
 	Expire(key string) error
+	Incr(key string) (int64, error)
 }
 
 type CacheHandler struct {
@@ -49,10 +50,14 @@ func (cs CacheHandler) Set(key string, state []byte, expired ...int) error {
 	return err
 }
 
+func (cs CacheHandler) Incr(key string) (int64, error) {
+	return cs.client.Incr(ctx, key).Result()
+}
+
 func (cs CacheHandler) Del(key string) error {
 	return cs.client.Del(ctx, key).Err()
 }
 
 func (cs CacheHandler) Expire(key string) error {
-	return cs.client.Expire(ctx, key, 10*time.Second).Err()
+	return cs.client.Expire(ctx, key, 2*time.Second).Err()
 }
