@@ -42,7 +42,7 @@ const (
 )
 
 const (
-	FsActionConferenceCreate FsEventAction = "conference_create"
+	FsActionConferenceCreate FsEventAction = "conference-create"
 	FsActionConferenceEnd    FsEventAction = "conference-destroy"
 	FsActionAddMember        FsEventAction = "add-member"
 	FsActionDelMember        FsEventAction = "del-member"
@@ -92,12 +92,6 @@ func (cf *ConfEventHandler) ProcessFsEventToStatusCallback(fsEvent model.Confere
 
 	confKey := fmt.Sprintf("conference:sequence:%s", fsEvent.ConferenceUniqueID)
 
-	if sequenceNumber, err = cf.cacheHandler.Incr(confKey); err != nil {
-		log.Println("error while getting conference sequence number for ", confKey, err)
-	}
-
-	confCommonModel.SequenceNumber = strconv.Itoa(int(sequenceNumber))
-
 	confCommonModel.StatusCallbackEvent = string(ConfEventActionStatusMap[FsEventAction(fsEvent.Action)])
 
 	confCommonModel.Timestamp = fsEvent.EventDateGmt
@@ -118,6 +112,12 @@ func (cf *ConfEventHandler) ProcessFsEventToStatusCallback(fsEvent model.Confere
 		log.Println("conference event name is missing, not sending statuscallback ")
 		return nil
 	}
+
+	if sequenceNumber, err = cf.cacheHandler.Incr(confKey); err != nil {
+		log.Println("error while getting conference sequence number for ", confKey, err)
+	}
+
+	confCommonModel.SequenceNumber = strconv.Itoa(int(sequenceNumber))
 
 	dataMap := make(map[string]interface{})
 	if callbackByte, err := json.Marshal(confCommonModel); err == nil {
