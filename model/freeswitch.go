@@ -1,6 +1,5 @@
 package model
 
-
 type ConferenceEvent struct {
 	Action                         string `json:"Action"`
 	AnswerState                    string `json:"Answer-State"`
@@ -82,4 +81,6 @@ type ConferenceEvent struct {
 	Talking                        string `json:"Talking"`
 	UniqueID                       string `json:"Unique-Id"`
 	Video                          string `json:"Video"`
+	StatuscallbackMethod           string `json:"Statuscallback_Method"`
+	StatuscallbackURL              string `json:"Statuscallback_Url"`
 }

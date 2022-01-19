@@ -48,23 +48,25 @@ func NewConfEventHandler(cacheHandler redis.CacheInterface, httpHandler httprest
 func (cf *ConfEventHandler) ProcessConfEvent(eventData []byte) error {
 	var confEvent model.ConferenceEvent
 	var err error
-	var confCacheData []byte
-	var statusCallbackUrl string
-	var statusCallbackMethod = "POST"
 
-	var confCacheModel model.ConferenceDetailsFromCache
+	log.Println(string(eventData))
 
 	if err := json.Unmarshal(eventData, &confEvent); err == nil {
 
 		log.Println("event is ", confEvent.EventName, " sub class is ", confEvent.EventSubclass, " action is ",
 			confEvent.Action, " name is ", confEvent.ConferenceName, " time is ", confEvent.EventDateTimestamp)
 
+		//no need to send this to status http url
+		if confEvent.StatuscallbackURL == "" {
+			return nil
+		}
+
 		confKey := fmt.Sprintf("conference:%s@%s", url.PathEscape(confEvent.ConferenceName),
 			confEvent.ConferenceProfileName)
 
 		log.Println("conference get key is ", confKey)
 
-		//getting details from conference cache
+		/*//getting details from conference cache
 		if confCacheData, err = cf.cacheHandler.Get(confKey); err != nil {
 			log.Println("conference data not found in cache", confKey, err)
 			return err
@@ -73,13 +75,7 @@ func (cf *ConfEventHandler) ProcessConfEvent(eventData []byte) error {
 		if err := json.Unmarshal(confCacheData, &confCacheModel); err != nil {
 			log.Println("conference data found in cache, unmarshal failed ", confKey,err)
 			return err
-		}
-
-		statusCallbackUrl = confCacheModel.DialConferenceStatusCallback
-
-		statusCallbackMethod = confCacheModel.DialConferenceStatusCallbackMethod
-
-		log.Println("conference status callback url is ", confCacheModel)
+		}*/
 
 		if confEvent.Action == "conference-destroy" {
 			if err = cf.cacheHandler.Expire(confKey); err != nil {
@@ -87,36 +83,32 @@ func (cf *ConfEventHandler) ProcessConfEvent(eventData []byte) error {
 			}
 		}
 
-		if statusCallbackUrl != "" {
-			log.Println("statuscallback url is ", statusCallbackUrl)
-			log.Println("event_data - ", confEvent)
-			statusCallbackMap := cf.FormatConferenceStatusCallback(confCacheModel, confEvent)
-			log.Println("statuscallback map is before event check ", statusCallbackMap)
-			if statusCallbackMap["StatusCallbackEvent"] != "" {
-				log.Println("statuscallback map is ", statusCallbackMap)
-				if statusCallbackMethod == "GET" {
-					_, _, _ = cf.httpHandler.Get(statusCallbackMap, statusCallbackUrl)
-				} else {
-					_, _, _ = cf.httpHandler.Post(statusCallbackMap, statusCallbackUrl)
-				}
+		log.Println("event_data - ", confEvent)
+		statusCallbackMap := cf.FormatConferenceStatusCallback(confEvent)
+		log.Println("statuscallback map is before event check ", statusCallbackMap)
+		if statusCallbackMap["StatusCallbackEvent"] != "" {
+			log.Println("statuscallback map is ", statusCallbackMap)
+			if confEvent.StatuscallbackMethod == "GET" {
+				_, _, _ = cf.httpHandler.Get(statusCallbackMap, confEvent.StatuscallbackURL)
+			} else {
+				_, _, _ = cf.httpHandler.Post(statusCallbackMap, confEvent.StatuscallbackURL)
 			}
+		}
 
-			//check if its last member then send conference-end
-			if statusCallbackMap["add-member"] == "" {
+		//check if its last member then send conference-end
+		if statusCallbackMap["add-member"] == "" {
 
-			}
 		}
 
 	}
 	return err
 }
 
-func (cf *ConfEventHandler) FormatConferenceStatusCallback(confCacheData model.ConferenceDetailsFromCache,
-	confEventData model.ConferenceEvent) map[string]interface{} {
+func (cf *ConfEventHandler) FormatConferenceStatusCallback(confEventData model.ConferenceEvent) map[string]interface{} {
 	var confEvent = make(map[string]interface{})
-	confEvent["ConferenceSid"] = confCacheData.DialConfSid
+	confEvent["ConferenceSid"] = confEventData.ConferenceUniqueID
 	confEvent["FriendlyName"] = getConfFriendlyName(confEventData.ConferenceName)
-	confEvent["AccountSid"] = confCacheData.DialConfAccountSid
+	//confEvent["AccountSid"] = confEventData.
 	confEvent["StatusCallbackEvent"] = getConfEventStatus(confEventData.Action)
 	confEvent["CallSid"] = confEventData.ChannelCallUUID
 	return confEvent
