@@ -4,7 +4,11 @@ This Repository is responsible for consumer for freeswitch event that are queued
 
 ##TODO
 - Configuration
-- RabbitMQ Connection Management Separate Package
+- Retry for statuscallback
+- In Case of Failure What to do
 - RabbitMQ Consumer Handler (Multiple Consumer)
 - Logging Handling
-- Conference Room Based Data Fetch from Redis (StatusCallback Url , StatusCallback Method, Conference Sid)
+### Test
+- unit testing of each package
+- load test
+- benchmark testing

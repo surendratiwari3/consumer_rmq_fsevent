@@ -20,15 +20,22 @@ type CacheHandler struct {
 	client *redis.Client
 }
 
-func NewCacheHandler() (CacheInterface, error) {
-	redisHostPort := "127.0.0.1:6379"
+type Config struct {
+	RedisHostPort string
+	RedisPassword string
+	RedisDB       int
+	MaxRetries    int
+	MinIdleConns  int
+}
+
+func NewCacheHandler(config Config) (CacheInterface, error) {
 	return &CacheHandler{
 		client: redis.NewClient(&redis.Options{
-			Addr:         redisHostPort,
-			MinIdleConns: 5,
-			MaxRetries:   3,
-			Password:     "",
-			DB:           0,
+			Addr:         config.RedisHostPort,
+			MinIdleConns: config.MinIdleConns,
+			MaxRetries:   config.MaxRetries,
+			Password:     config.RedisPassword,
+			DB:           config.RedisDB,
 		}),
 	}, nil
 }

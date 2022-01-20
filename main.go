@@ -21,14 +21,26 @@ func init() {
 }
 
 func main() {
-	httpHandler := httprest.NewHttpRestHandler()
 
-	cacheHandle, _ := redis.NewCacheHandler()
-
-	confEventHandler := event.NewConfEventHandler(cacheHandle, httpHandler)
-
+	var cacheHandle redis.CacheInterface
 	var rabbitMqHandle rabbitmq.RmqInterface
 	var err error
+
+	httpHandler := httprest.NewHttpRestHandler()
+
+	redisConf := redis.Config{
+		RedisHostPort: "127.0.0.1:6379",
+		MaxRetries:    3,
+		MinIdleConns:  5,
+		RedisDB:       0,
+	}
+
+	if cacheHandle, err = redis.NewCacheHandler(redisConf); err != nil {
+		log.Fatalf("%s", err)
+		os.Exit(0)
+	}
+
+	confEventHandler := event.NewConfEventHandler(cacheHandle, httpHandler)
 
 	if rabbitMqHandle, err = rabbitmq.NewRmqAdapter(*uri, *queue); err != nil {
 		log.Fatalf("%s", err)

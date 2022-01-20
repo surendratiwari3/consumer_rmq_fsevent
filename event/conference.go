@@ -67,6 +67,8 @@ func (cf *ConfEventHandler) ProcessConfEvent(eventData []byte) error {
 	var confFsEvent model.ConferenceFsEvent
 	var err error
 
+	log.Println("event_data - ", string(eventData))
+
 	if err := json.Unmarshal(eventData, &confFsEvent); err == nil {
 
 		log.Println("event is ", confFsEvent.EventName, " sub class is ", confFsEvent.EventSubclass, " action is ",
@@ -89,6 +91,7 @@ func (cf *ConfEventHandler) ProcessFsEventToStatusCallback(fsEvent model.Confere
 	var sequenceNumber int64
 	var err error
 	var confCommonModel model.ConferenceCommon
+	var participantModel model.ConferenceParticipant
 
 	confKey := fmt.Sprintf("conference:sequence:%s", fsEvent.ConferenceUniqueID)
 
@@ -119,8 +122,17 @@ func (cf *ConfEventHandler) ProcessFsEventToStatusCallback(fsEvent model.Confere
 
 	confCommonModel.SequenceNumber = strconv.Itoa(int(sequenceNumber))
 
+	//check if its participant event, then process the participant event also
+	if strings.HasPrefix(confCommonModel.StatusCallbackEvent, "participant") {
+		participantModel.Hold = fsEvent.Hold
+		participantModel.Muted = fsEvent.MuteDetect
+		participantModel.CallSid = fsEvent.ChannelCallUUID
+		participantModel.StartConferenceOnEnter = cf.isStartConferenceOnEnter(fsEvent.MemberType)
+	}
+	participantModel.ConferenceCommon = confCommonModel
+
 	dataMap := make(map[string]interface{})
-	if callbackByte, err := json.Marshal(confCommonModel); err == nil {
+	if callbackByte, err := json.Marshal(participantModel); err == nil {
 		if err := json.Unmarshal(callbackByte, &dataMap); err != nil {
 			log.Println("unmarshal failed on convert statuscallback to map", err)
 			return err
@@ -139,4 +151,11 @@ func (cf *ConfEventHandler) ProcessFsEventToStatusCallback(fsEvent model.Confere
 func (cf *ConfEventHandler) getConfFriendlyName(absoluteConfName string) (string, string) {
 	authConf := strings.SplitN(absoluteConfName, "-", 2)
 	return authConf[0], authConf[1]
+}
+
+func (cf *ConfEventHandler) isStartConferenceOnEnter(fsEventParticipantRole string) string {
+	if fsEventParticipantRole == "moderator"{
+		return "true"
+	}
+	return "false"
 }
