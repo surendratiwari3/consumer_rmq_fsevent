@@ -24,11 +24,10 @@
 <h3 align="center">consumer_rmq_fsevent</h3>
 
   <p align="center">
-    project_description
+    consumer_rmq_fsevent: It will consume the freeswitch conference event from rabbitmq and generate the twilio like statuscallback event. You can also send the genrated statuscallback event to configured statuscallback url. Please set the confvar variable for making consumer_rmq_fsevent to send statuscallback to http url. 
     <br />
     <br />
-    <br />
-    ·
+    
     <a href="https://github.com/surendratiwari3/consumer_rmq_fsevent/issues">Report Bug</a>
     ·
     <a href="https://github.com/surendratiwari3/consumer_rmq_fsevent/issues">Request Feature</a>
