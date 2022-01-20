@@ -21,10 +21,6 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/surendratiwari3/consumer_rmq_fsevent">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
-  </a>
-
 <h3 align="center">consumer_rmq_fsevent</h3>
 
   <p align="center">
