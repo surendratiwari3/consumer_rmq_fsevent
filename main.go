@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	uri         = flag.String("uri", "amqp://user4tiniyo:4pass4tiniyo@3.0.39.201:5672/", "AMQP URI")
+	uri         = flag.String("uri", "amqp://admin:admin@127.0.0.1:5672/", "AMQP URI")
 	queue       = flag.String("queue", "call_queue_stats", "Ephemeral AMQP queue name")
 	consumerTag = flag.String("consumer-tag", "simple-consumer", "AMQP consumer tag (should not be blank)")
 )
