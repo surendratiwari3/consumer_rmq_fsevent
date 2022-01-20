@@ -128,6 +128,7 @@ func (cf *ConfEventHandler) ProcessFsEventToStatusCallback(fsEvent model.Confere
 		participantModel.Muted = fsEvent.MuteDetect
 		participantModel.CallSid = fsEvent.ChannelCallUUID
 		participantModel.StartConferenceOnEnter = cf.isStartConferenceOnEnter(fsEvent.MemberType)
+		participantModel.EndConferenceOnExit = cf.isEndConferenceOnExit(fsEvent.EndConf)
 	}
 	participantModel.ConferenceCommon = confCommonModel
 
@@ -155,6 +156,13 @@ func (cf *ConfEventHandler) getConfFriendlyName(absoluteConfName string) (string
 
 func (cf *ConfEventHandler) isStartConferenceOnEnter(fsEventParticipantRole string) string {
 	if fsEventParticipantRole == "moderator"{
+		return "true"
+	}
+	return "false"
+}
+
+func (cf *ConfEventHandler) isEndConferenceOnExit(endConf string) string {
+	if endConf == "true"{
 		return "true"
 	}
 	return "false"

@@ -3,6 +3,7 @@ package model
 type ConferenceFsEvent struct {
 	Action                         string `json:"Action"`
 	AnswerState                    string `json:"Answer-State"`
+	Authsid                        string `json:"Authsid"`
 	CallDirection                  string `json:"Call-Direction"`
 	CallerAni                      string `json:"Caller-Ani"`
 	CallerCalleeIDName             string `json:"Caller-Callee-Id-Name"`
@@ -52,8 +53,10 @@ type ConferenceFsEvent struct {
 	ConferenceProfileName          string `json:"Conference-Profile-Name"`
 	ConferenceSize                 string `json:"Conference-Size"`
 	ConferenceUniqueID             string `json:"Conference-Unique-Id"`
+	Confsid                        string `json:"Confsid"`
 	CoreUUID                       string `json:"Core-Uuid"`
 	CurrentEnergy                  string `json:"Current-Energy"`
+	Endconf                        string `json:"Endconf"`
 	EnergyLevel                    string `json:"Energy-Level"`
 	EventCallingFile               string `json:"Event-Calling-File"`
 	EventCallingFunction           string `json:"Event-Calling-Function"`
@@ -78,10 +81,9 @@ type ConferenceFsEvent struct {
 	PresenceCallDirection          string `json:"Presence-Call-Direction"`
 	See                            string `json:"See"`
 	Speak                          string `json:"Speak"`
+	StatuscallbackMethod           string `json:"Statuscallback_Method"`
+	StatuscallbackURL              string `json:"Statuscallback_Url"`
 	Talking                        string `json:"Talking"`
 	UniqueID                       string `json:"Unique-Id"`
 	Video                          string `json:"Video"`
-	StatuscallbackMethod           string `json:"Statuscallback_Method"`
-	StatuscallbackURL              string `json:"Statuscallback_Url"`
-	AuthSid						   string `json:"AuthSid"`
 }
