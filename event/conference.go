@@ -128,7 +128,7 @@ func (cf *ConfEventHandler) ProcessFsEventToStatusCallback(fsEvent model.Confere
 		participantModel.Muted = fsEvent.MuteDetect
 		participantModel.CallSid = fsEvent.ChannelCallUUID
 		participantModel.StartConferenceOnEnter = cf.isStartConferenceOnEnter(fsEvent.MemberType)
-		participantModel.EndConferenceOnExit = cf.isEndConferenceOnExit(fsEvent.EndConf)
+		participantModel.EndConferenceOnExit = cf.isEndConferenceOnExit(fsEvent.Endconf)
 	}
 	participantModel.ConferenceCommon = confCommonModel
 
