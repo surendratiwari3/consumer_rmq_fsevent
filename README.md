@@ -26,10 +26,8 @@
   <p align="center">
     project_description
     <br />
-    <a href="https://github.com/surendratiwari3/consumer_rmq_fsevent"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/surendratiwari3/consumer_rmq_fsevent">View Demo</a>
     ·
     <a href="https://github.com/surendratiwari3/consumer_rmq_fsevent/issues">Report Bug</a>
     ·
