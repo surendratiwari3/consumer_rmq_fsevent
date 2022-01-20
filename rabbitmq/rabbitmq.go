@@ -11,21 +11,20 @@ import (
 type consumerFunc func([]byte) error
 
 type RmqInterface interface {
-	PublishCallStats(data []byte) error
-	Consumer(consumerTag string, consumerHandler consumerFunc, consumerErr chan error) error
+	PublishCallStats(routingKey string, data []byte) error
+	Consumer(routingKey,consumerTag string, consumerHandler consumerFunc, consumerErr chan error) error
 }
 
 type RmqAdapter struct {
-	url         string
-	client      *amqp.Connection
-	channel     *amqp.Channel
-	routingKey  string
-	mLock       sync.Mutex
+	url     string
+	client  *amqp.Connection
+	channel *amqp.Channel
+	mLock   sync.Mutex
 }
 
 // Connect opens a connection to RabbitMQ, declares an exchange, opens a channel,
 // declares and binds the queue and enables publish notifications
-func NewRmqAdapter(rmqURL, queue string) (RmqInterface, error) {
+func NewRmqAdapter(rmqURL string) (RmqInterface, error) {
 
 	var conn *amqp.Connection
 	var channel *amqp.Channel
@@ -42,11 +41,10 @@ func NewRmqAdapter(rmqURL, queue string) (RmqInterface, error) {
 	}
 
 	rmqConn := &RmqAdapter{
-		url:        rmqURL,
-		client:     conn,
-		channel:    channel,
-		routingKey: queue,
-		mLock:      mutexLock,
+		url:     rmqURL,
+		client:  conn,
+		channel: channel,
+		mLock:   mutexLock,
 	}
 
 	ticker := time.NewTicker(5 * time.Second)
@@ -84,16 +82,16 @@ func (cq *RmqAdapter) reconnect() {
 	cq.mLock.Unlock()
 }
 
-func (cq *RmqAdapter) Consumer(consumerTag string, consumerHandler consumerFunc, consumerErr chan error) error {
+func (cq *RmqAdapter) Consumer(routingKey string, consumerTag string, consumerHandler consumerFunc, consumerErr chan error) error {
 	log.Printf("Queue bound to Exchange, starting Consume (consumer tag %q)", consumerTag)
 	deliveries, err := cq.channel.Consume(
-		cq.routingKey, // name
-		consumerTag,   // consumerTag,
-		false,         // noAck
-		false,         // exclusive
-		false,         // noLocal
-		false,         // noWait
-		nil,           // arguments
+		routingKey,  // name
+		consumerTag, // consumerTag,
+		false,       // noAck
+		false,       // exclusive
+		false,       // noLocal
+		false,       // noWait
+		nil,         // arguments
 	)
 	if err != nil {
 		return fmt.Errorf("queue consume: %s", err)
@@ -104,11 +102,11 @@ func (cq *RmqAdapter) Consumer(consumerTag string, consumerHandler consumerFunc,
 	return err
 }
 
-func (cq *RmqAdapter) PublishCallStats(data []byte) error {
+func (cq *RmqAdapter) PublishCallStats(routingKey string, data []byte) error {
 	var err error
 	if err = cq.channel.Publish(
 		"",
-		cq.routingKey,
+		routingKey,
 		false,
 		false,
 		amqp.Publishing{

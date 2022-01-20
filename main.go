@@ -42,13 +42,13 @@ func main() {
 
 	confEventHandler := event.NewConfEventHandler(cacheHandle, httpHandler)
 
-	if rabbitMqHandle, err = rabbitmq.NewRmqAdapter(*uri, *queue); err != nil {
+	if rabbitMqHandle, err = rabbitmq.NewRmqAdapter(*uri); err != nil {
 		log.Fatalf("%s", err)
 		os.Exit(0)
 	}
 
 	errConsumerChan := make(chan error)
-	if err := rabbitMqHandle.Consumer(*consumerTag, confEventHandler.ProcessConfEvent, errConsumerChan); err != nil {
+	if err := rabbitMqHandle.Consumer(*queue, *consumerTag, confEventHandler.ProcessConfEvent, errConsumerChan); err != nil {
 		log.Fatalf("%s", err)
 		os.Exit(0)
 	}
